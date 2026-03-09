@@ -1,0 +1,43 @@
+name: Delete by workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 削除対象ブランチ
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  delete:
+    runs-on: ubuntu-slim
+
+    env:
+      TARGET: ${{ github.event.inputs.target_branch }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: GetToken
+        id: token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.PEM }}
+
+      - uses: actions/github-script@v8
+        env:
+          APP_TOKEN: ${{ steps.token.outputs.token }}
+        with:
+          script: |
+            const { main } = await import('${{ github.workspace }}/.github/workflows/script.ts')
+
+            await main({
+              context,
+              core,
+              branch: process.env.TARGET,
+              token: process.env.APP_TOKEN
+            });
